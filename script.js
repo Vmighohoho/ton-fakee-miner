@@ -2,38 +2,43 @@
 const BALANCE_KEY = 'fakeTonBalance';
 const UPGRADES_KEY = 'upgradeLevels';
 const REBIRTH_KEY = 'rebirthLevel'; 
+const STARS_KEY = 'starsCount'; 
 
 let TAP_AMOUNT = 1.0; 
 
-// Параметры Ребирта
-const REBIRTH_BASE_COST = 20000.0;
-const REBIRTH_COST_MULTIPLIER = 2.0; 
-const REBIRTH_EARNINGS_MULTIPLIER = 2.0; 
+// Параметры ЭКОНОМИКИ
+const STARS_COST = 40000.0;
+const NORMAL_REBIRTH_COST = 10000.0;
+const STAR_REBIRTH_COST_STARS = 1;
+const REBIRTH_COST_MULTIPLIER = 1.5; 
+
+// const REBIRTH_EARNINGS_MULTIPLIER = 2.0; // ЭТА КОНСТАНТА БОЛЬШЕ НЕ НУЖНА ДЛЯ РАСЧЕТА МНОЖИТЕЛЯ
+const STAR_REBIRTH_BOOST = 5; // Звездный ребирт дает +5 уровней множителя
 
 let rebirthLevel = loadRebirthLevel(); 
-// ...
+let starsCount = loadStarsCount();
 
 // Определения уровней прокачки
 const UPGRADE_DEFINITIONS = {
-    // Усиление тапа: Теперь доход рассчитывается по формуле: 1.0 * (2^level)
+    // Усиление тапа: Экспоненциальное удорожание
     tap_boost: {
-        baseCost: 10.0, 
-        costMultiplier: 2.0, 
-        baseValue: 1.0, // Начальный доход (при 0 уровне)
-        valueIncrement: 2.0, // Это теперь базовый множитель (2x)
+        baseCost: 50.0, 
+        costMultiplier: 2.5, 
+        baseValue: 1.0, 
+        valueIncrement: 2.0, 
         valueKey: 'tapAmount',
     },
-    // Пассивный доход (остается линейным)
+    // Пассивный доход: Линейное удорожание
     passive_income: {
-        baseCost: 50.0, 
-        costMultiplier: 2.5,
+        baseCost: 200.0, 
+        costMultiplier: 3.0, 
         baseValue: 0.0,
-        valueIncrement: 5.0, 
+        valueIncrement: 10.0, 
         valueKey: 'incomeRate',
     }
 };
 
-// --- DOM ЭЛЕМЕНТЫ (остались прежними) ---
+// --- DOM ЭЛЕМЕНТЫ ---
 const balanceDisplay = document.getElementById('balance-display');
 const tapButton = document.getElementById('tap-button');
 const tapValueDisplay = document.getElementById('tap-value');
@@ -41,10 +46,13 @@ const incomeRateDisplay = document.getElementById('income-rate');
 
 const rebirthLevelDisplay = document.getElementById('rebirth-level');
 const rebirthMultiplierDisplay = document.getElementById('rebirth-multiplier');
-const rebirthButton = document.getElementById('rebirth-btn');
 
+const normalRebirthButton = document.getElementById('rebirth-option-1');
+const starRebirthButton = document.getElementById('rebirth-option-2');
 
-// Элементы для переключения вкладок
+const starCountDisplay = document.getElementById('star-count');
+const buyStarButton = document.getElementById('buy-star-btn');
+
 const navItems = document.querySelectorAll('.footer-nav .nav-item');
 const sections = {
     'wallet-section': document.getElementById('wallet-section'),
@@ -56,7 +64,7 @@ let lastLoginTime = Date.now();
 let activeUpgrades = loadUpgrades();
 
 
-// --- ФУНКЦИИ ХРАНЕНИЯ ДАННЫХ (остались прежними) ---
+// --- ФУНКЦИИ ХРАНЕНИЯ ДАННЫХ ---
 
 function loadBalance() {
     const balance = localStorage.getItem(BALANCE_KEY);
@@ -85,9 +93,19 @@ function saveRebirthLevel(level) {
     localStorage.setItem(REBIRTH_KEY, level.toString());
 }
 
-// --- ФУНКЦИИ МНОЖИТЕЛЯ (остались прежними) ---
+function loadStarsCount() {
+    const stars = localStorage.getItem(STARS_KEY);
+    return parseInt(stars) || 0;
+}
+
+function saveStarsCount(stars) {
+    localStorage.setItem(STARS_KEY, stars.toString());
+}
+
+// --- ФУНКЦИИ МНОЖИТЕЛЯ (ИЗМЕНЕНО) ---
 function getRebirthMultiplier() {
-    return Math.pow(REBIRTH_EARNINGS_MULTIPLIER, rebirthLevel);
+    // Множитель = Уровень + 1 (т.е. Уровень 0 = 1x, Уровень 1 = 2x, Уровень 5 = 6x)
+    return rebirthLevel + 1;
 }
 
 
@@ -100,26 +118,17 @@ function updateUpgradeValue(upgradeId) {
     const nextCost = def.baseCost * (def.costMultiplier ** level);
     let currentValue;
 
-    // НОВАЯ ЛОГИКА: Экспоненциальное усиление тапа (2^level)
     if (upgradeId === 'tap_boost') {
-        // Уровень 0: 1.0 TON
-        // Уровень 1: 1.0 * 2^1 = 2.0 TON
-        // Уровень 2: 1.0 * 2^2 = 4.0 TON
-        // Уровень 3: 1.0 * 2^3 = 8.0 TON
-        // ...
         currentValue = def.baseValue * Math.pow(def.valueIncrement, level);
     } else {
-        // Пассивный доход: Остается линейным
         currentValue = def.baseValue + (level * def.valueIncrement);
     }
     
-    // Обновление TAP_AMOUNT, если это усиление тапа
     if (upgradeId === 'tap_boost') {
         TAP_AMOUNT = currentValue;
         tapValueDisplay.textContent = currentValue.toFixed(currentValue % 1 === 0 ? 0 : 2); 
     }
     
-    // Обновление интерфейса карточки
     const card = document.querySelector(`.upgrade-card[data-upgrade-id="${upgradeId}"]`);
     if (card) {
         card.querySelector('.level').textContent = level;
@@ -130,15 +139,33 @@ function updateUpgradeValue(upgradeId) {
         const buyBtn = card.querySelector('.buy-btn');
         const currentBalance = loadBalance();
 
-        if (level < 10) { 
-            buyBtn.textContent = `Купить (${nextCost.toFixed(2)} TON)`;
-            buyBtn.disabled = currentBalance < nextCost;
-        } else {
-             buyBtn.textContent = 'МАКС. УРОВЕНЬ';
-             buyBtn.disabled = true;
-        }
+        buyBtn.textContent = `Купить (${nextCost.toFixed(2)} TON)`;
+        buyBtn.disabled = currentBalance < nextCost;
     }
 }
+
+function updateRebirthUI() {
+    const currentMultiplier = getRebirthMultiplier();
+    // Нормальный Ребирт теперь дорожает по экспоненте, чтобы замедлить прогресс
+    const nextNormalRebirthCost = NORMAL_REBIRTH_COST * Math.pow(REBIRTH_COST_MULTIPLIER, rebirthLevel);
+    const currentBalance = loadBalance();
+    
+    rebirthLevelDisplay.textContent = rebirthLevel;
+    rebirthMultiplierDisplay.textContent = `${currentMultiplier.toFixed(0)}x`;
+    
+    normalRebirthButton.textContent = `1x Ребирт (${nextNormalRebirthCost.toFixed(0)} TON)`;
+    normalRebirthButton.disabled = currentBalance < nextNormalRebirthCost;
+    
+    starRebirthButton.innerHTML = `5x Ребирт (${STAR_REBIRTH_COST_STARS} <i class="fas fa-star tg-star"></i>)`; 
+    starRebirthButton.disabled = starsCount < STAR_REBIRTH_COST_STARS;
+}
+
+function updateExchangeUI() {
+    starCountDisplay.textContent = starsCount;
+    buyStarButton.textContent = `Купить (${STARS_COST.toFixed(0)} TON)`;
+    buyStarButton.disabled = loadBalance() < STARS_COST;
+}
+
 
 function updateAllUpgradesUI() {
     updateUpgradeValue('tap_boost');
@@ -149,15 +176,8 @@ function updateAllUpgradesUI() {
     const totalIncome = def.baseValue + (passiveLevel * def.valueIncrement);
     incomeRateDisplay.textContent = totalIncome.toFixed(2);
     
-    const currentMultiplier = getRebirthMultiplier();
-    const nextRebirthCost = REBIRTH_BASE_COST * Math.pow(REBIRTH_COST_MULTIPLIER, rebirthLevel);
-    const currentBalance = loadBalance();
-    
-    rebirthLevelDisplay.textContent = rebirthLevel;
-    rebirthMultiplierDisplay.textContent = `${currentMultiplier.toFixed(0)}x`;
-    
-    rebirthButton.textContent = `Провести Ребирт (${nextRebirthCost.toFixed(0)} TON)`;
-    rebirthButton.disabled = currentBalance < nextRebirthCost;
+    updateRebirthUI();
+    updateExchangeUI();
 }
 
 function updateDisplay() {
@@ -166,7 +186,7 @@ function updateDisplay() {
     updateAllUpgradesUI();
 }
 
-// --- ЛОГИКА ПАССИВНОГО ДОХОДА (осталась прежней) ---
+// --- ЛОГИКА ПАССИВНОГО ДОХОДА ---
 
 function calculatePassiveIncome() {
     const currentTime = Date.now();
@@ -198,43 +218,89 @@ function calculatePassiveIncome() {
 }
 
 
-// --- ОБРАБОТЧИК РЕБИРТА (остался прежним) ---
-function handleRebirth() {
-    const nextRebirthCost = REBIRTH_BASE_COST * Math.pow(REBIRTH_COST_MULTIPLIER, rebirthLevel);
+// --- ОБРАБОТЧИК ОБМЕНА ---
+function handleBuyStar() {
     let currentBalance = loadBalance();
 
-    if (currentBalance >= nextRebirthCost) {
-        if (!confirm(`Вы уверены, что хотите провести Ребирт? Это сбросит ваш баланс и все прокачки, но даст ${getRebirthMultiplier() * 2}x множитель!`)) {
-            return;
-        }
-        
-        currentBalance -= nextRebirthCost; 
-        
-        rebirthLevel++;
-        saveRebirthLevel(rebirthLevel);
-        
-        saveBalance(0.00); 
-        saveUpgrades({ tap_boost: 0, passive_income: 0 }); 
+    if (currentBalance >= STARS_COST) {
+        currentBalance -= STARS_COST;
+        starsCount++;
         
         saveBalance(currentBalance);
-        
-        console.log(`[РЕБИРТ] Проведен Ребирт #${rebirthLevel}. Новый множитель: ${getRebirthMultiplier()}x`);
-        
-        alert(`Ребирт #${rebirthLevel} успешно проведен! Ваш новый множитель: ${getRebirthMultiplier().toFixed(0)}x. Баланс и прокачки сброшены.`);
-        window.location.reload(); 
+        saveStarsCount(starsCount);
+        updateDisplay();
+        alert(`Поздравляем! Вы купили 1 Звезду. У вас ${starsCount} Звезд.`);
 
     } else {
-        alert(`Недостаточно TON для Ребирта. Требуется: ${nextRebirthCost.toFixed(0)} TON.`);
+        alert(`Недостаточно TON для покупки Звезды. Требуется: ${STARS_COST.toFixed(0)} TON.`);
     }
 }
 
 
-// --- ОБРАБОТЧИКИ СОБЫТИЙ (Tap и Buy Upgrade) ---
+// --- ОБРАБОТЧИК РЕБИРТА ---
+function handleRebirth(event) {
+    const type = event.target.getAttribute('data-cost-key');
+    let currentBalance = loadBalance();
+    let newLevelIncrease = 0;
+    let costText = "";
+    let canPerform = false;
+
+    if (type === 'normal_rebirth') {
+        const cost = NORMAL_REBIRTH_COST * Math.pow(REBIRTH_COST_MULTIPLIER, rebirthLevel);
+        costText = `${cost.toFixed(0)} TON`;
+        newLevelIncrease = 1;
+        
+        if (currentBalance >= cost) {
+            canPerform = true;
+            currentBalance -= cost; 
+        }
+    } else if (type === 'star_rebirth') {
+        const cost = STAR_REBIRTH_COST_STARS;
+        costText = `${cost} Звезда`;
+        newLevelIncrease = STAR_REBIRTH_BOOST;
+        
+        if (starsCount >= cost) {
+            canPerform = true;
+            starsCount -= cost; 
+            saveStarsCount(starsCount); 
+        }
+    }
+
+    if (canPerform) {
+        if (!confirm(`Вы уверены, что хотите провести Ребирт на ${newLevelIncrease} уровней? Это сбросит ваш баланс и все прокачки, но увеличит множитель!`)) {
+            return;
+        }
+        
+        // 1. Увеличиваем уровень Ребирта
+        rebirthLevel += newLevelIncrease;
+        saveRebirthLevel(rebirthLevel);
+        
+        // 2. Сброс прогресса (прокачек)
+        saveUpgrades({ tap_boost: 0, passive_income: 0 }); 
+        
+        // 3. СБРОС БАЛАНСА
+        saveBalance(0.00); 
+
+        // 4. СБРОС НАКОПЛЕННОГО ПАССИВНОГО ДОХОДА
+        localStorage.setItem('lastLoginTime', Date.now().toString());
+        
+        const newMultiplier = getRebirthMultiplier();
+        console.log(`[РЕБИРТ] Проведен Ребирт. Новый множитель: ${newMultiplier}x`);
+        
+        alert(`Ребирт успешно проведен! Ваш новый множитель: ${newMultiplier.toFixed(0)}x. Баланс и прокачки сброшены.`);
+        window.location.reload(); 
+
+    } else {
+        alert(`Недостаточно ресурсов для Ребирта. Требуется: ${costText}.`);
+    }
+}
+
+
+// --- ОБРАБОТЧИКИ СОБЫТИЙ ---
 
 function handleTap() {
     let currentBalance = loadBalance();
     
-    // УЧЕТ МНОЖИТЕЛЯ РЕБИРТА
     const earnedAmount = TAP_AMOUNT * getRebirthMultiplier(); 
     currentBalance += earnedAmount;
     
@@ -260,7 +326,7 @@ function handleBuyUpgrade(event) {
     
     let currentBalance = loadBalance();
 
-    if (currentBalance >= cost && level < 10) {
+    if (currentBalance >= cost) {
         currentBalance -= cost;
         activeUpgrades[upgradeId]++;
         
@@ -292,9 +358,10 @@ function switchSection(targetId) {
     });
 }
 
-// --- ИНИЦИАЛИЗАЦИЯ (осталась прежней) ---
+// --- ИНИЦИАЛИЗАЦИЯ ---
 document.addEventListener('DOMContentLoaded', () => {
     
+    // Навигация
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const targetId = item.getAttribute('data-target');
@@ -304,16 +371,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Кнопка ТАПА
     tapButton.addEventListener('click', handleTap);
     
+    // Кнопки ПОКУПКИ УЛУЧШЕНИЙ
     document.querySelectorAll('.buy-btn').forEach(btn => {
-        if (btn.id !== 'rebirth-btn') {
+        if (!btn.classList.contains('rebirth-option') && btn.id !== 'buy-star-btn') {
             btn.addEventListener('click', handleBuyUpgrade);
         }
     });
     
-    rebirthButton.addEventListener('click', handleRebirth);
+    // Кнопки РЕБИРТА
+    document.querySelectorAll('.rebirth-option').forEach(btn => {
+        btn.addEventListener('click', handleRebirth);
+    });
 
+    // Кнопка ОБМЕНА
+    buyStarButton.addEventListener('click', handleBuyStar);
+
+    // Загрузка данных и расчет
     const savedTime = localStorage.getItem('lastLoginTime');
     if (savedTime) {
         lastLoginTime = parseInt(savedTime);

@@ -6,6 +6,17 @@
     <title>Имитация TON Wallet</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        .tg-star {
+            color: #55acee; /* Цвет похожий на Telegram Blue */
+            font-size: 1.2em;
+        }
+        .fa-star-o:before {
+            content: "\f006"; 
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+        }
+    </style>
 </head>
 <body>
 
@@ -45,7 +56,7 @@
                             <p>Доход за тап: +<span class="value">1.0</span></p>
                         </div>
                     </div>
-                    <button class="buy-btn" data-cost-key="tap_boost">Купить (10.00 TON)</button>
+                    <button class="buy-btn" data-cost-key="tap_boost">Купить (50.00 TON)</button>
                 </div>
 
                 <div class="upgrade-card" data-upgrade-id="passive_income">
@@ -56,7 +67,7 @@
                             <p>Доход в час: +<span class="value">0.00</span></p>
                         </div>
                     </div>
-                    <button class="buy-btn" data-cost-key="passive_income">Купить (50.00 TON)</button>
+                    <button class="buy-btn" data-cost-key="passive_income">Купить (200.00 TON)</button>
                 </div>
                 
                 <div class="upgrade-card rebirth-card" data-upgrade-id="rebirth">
@@ -67,16 +78,31 @@
                             <p>Общий множитель дохода: <span id="rebirth-multiplier">1x</span></p>
                         </div>
                     </div>
-                    <button id="rebirth-btn" class="buy-btn">Провести Ребирт (20,000 TON)</button>
-                    <p class="rebirth-warning">Сбросит уровень прокачек и баланс (кроме текущего множителя).</p>
+                    <button id="rebirth-option-1" class="buy-btn rebirth-option" data-cost-key="normal_rebirth">1x Ребирт (10,000 TON)</button>
+                    <button id="rebirth-option-2" class="buy-btn rebirth-option" data-cost-key="star_rebirth">5x Ребирт (1 <i class="fas fa-star tg-star"></i>)</button>
+                    <p class="rebirth-warning">Сбросит уровень прокачек и баланс (кроме множителя).</p>
                 </div>
                 
                 <p class="passive-hint">Ваш пассивный доход начисляется даже когда вы не в сети!</p>
             </section>
             
             <section id="exchange-section" class="passive-content hidden">
-                <h2 class="passive-title">Обмен (В разработке)</h2>
-                <p style="text-align: center; color: #555;">Здесь будет функционал обмена валют.</p>
+                <h2 class="passive-title">Обмен</h2>
+                <p style="text-align: center; color: #555;">Обменивайте TON на специальные ресурсы.</p>
+                
+                 <div class="upgrade-card" data-upgrade-id="stars_exchange">
+                    <div class="upgrade-info">
+                        <i class="fas fa-star tg-star"></i>
+                        <div class="text-info">
+                            <h3>Telegram Stars</h3>
+                            <p>Ваши <span id="star-count">0</span> <i class="fas fa-star tg-star"></i></p>
+                        </div>
+                    </div>
+                    <button id="buy-star-btn" class="buy-btn">
+                        Купить (40,000 TON)
+                    </button>
+                </div>
+
             </section>
 
         </div>
