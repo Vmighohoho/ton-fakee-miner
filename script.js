@@ -1,22 +1,26 @@
 // --- КОНСТАНТЫ И НАСТРОЙКИ ИГРЫ ---
 const BALANCE_KEY = 'fakeTonBalance';
 const UPGRADES_KEY = 'upgradeLevels';
-let TAP_AMOUNT = 0.00005;
+
+// ИЗМЕНЕНО: Начальный доход за тап 1.0 TON
+let TAP_AMOUNT = 1.0; 
 
 // Определения уровней прокачки
 const UPGRADE_DEFINITIONS = {
+    // Усиление тапа:
     tap_boost: {
-        baseCost: 1.0,
-        costMultiplier: 2.0, 
-        baseValue: 0.00005,
-        valueIncrement: 0.00010,
+        baseCost: 10.0, // ИЗМЕНЕНО: Первая покупка стоит 10 TON
+        costMultiplier: 2.0, // Каждое следующее улучшение в 2 раза дороже
+        baseValue: 1.0, // Начальный доход за тап
+        valueIncrement: 1.0, // ИЗМЕНЕНО: Увеличение дохода за тап на 1.0 TON
         valueKey: 'tapAmount',
     },
+    // Пассивный доход:
     passive_income: {
-        baseCost: 5.0,
-        costMultiplier: 3.0,
+        baseCost: 50.0, // ИЗМЕНЕНО: Первая покупка стоит 50 TON
+        costMultiplier: 2.5, // Удорожание в 2.5 раза
         baseValue: 0.0,
-        valueIncrement: 0.05,
+        valueIncrement: 5.0, // ИЗМЕНЕНО: Увеличение дохода в час на 5.0 TON
         valueKey: 'incomeRate',
     }
 };
@@ -32,7 +36,7 @@ const navItems = document.querySelectorAll('.footer-nav .nav-item');
 const sections = {
     'wallet-section': document.getElementById('wallet-section'),
     'passive-section': document.getElementById('passive-section'),
-    'exchange-section': document.getElementById('exchange-section') // Добавлена новая секция
+    'exchange-section': document.getElementById('exchange-section')
 };
 
 let lastLoginTime = Date.now();
@@ -42,12 +46,14 @@ let activeUpgrades = loadUpgrades();
 // --- ФУНКЦИИ ХРАНЕНИЯ ДАННЫХ ---
 
 function loadBalance() {
+    // Теперь баланс отображается с 2 знаками после запятой для удобства (TON)
     const balance = localStorage.getItem(BALANCE_KEY);
-    return parseFloat(balance) || 0.00000;
+    return parseFloat(balance) || 0.00;
 }
 
 function saveBalance(balance) {
-    localStorage.setItem(BALANCE_KEY, balance.toFixed(5));
+    // Сохраняем с 2 знаками
+    localStorage.setItem(BALANCE_KEY, balance.toFixed(2));
 }
 
 function loadUpgrades() {
@@ -67,19 +73,22 @@ function updateUpgradeValue(upgradeId) {
 
     const nextCost = def.baseCost * (def.costMultiplier ** level);
     const currentValue = def.baseValue + (level * def.valueIncrement);
-    const nextValue = def.baseValue + ((level + 1) * def.valueIncrement);
-
+    
     // Обновление TAP_AMOUNT, если это усиление тапа
     if (upgradeId === 'tap_boost') {
         TAP_AMOUNT = currentValue;
-        tapValueDisplay.textContent = currentValue.toFixed(5);
+        // Отображаем с 1 знаком, если целое, или с 2
+        tapValueDisplay.textContent = currentValue.toFixed(currentValue % 1 === 0 ? 0 : 2); 
     }
     
     // Обновление интерфейса карточки
     const card = document.querySelector(`.upgrade-card[data-upgrade-id="${upgradeId}"]`);
     if (card) {
         card.querySelector('.level').textContent = level;
-        card.querySelector('.value').textContent = currentValue.toFixed(def.valueKey === 'incomeRate' ? 2 : 5);
+        
+        // Форматирование для отображения
+        const displayValue = currentValue.toFixed(def.valueKey === 'incomeRate' ? 2 : (currentValue % 1 === 0 ? 0 : 2));
+        card.querySelector('.value').textContent = displayValue;
         
         const buyBtn = card.querySelector('.buy-btn');
         const currentBalance = loadBalance();
@@ -107,7 +116,7 @@ function updateAllUpgradesUI() {
 
 function updateDisplay() {
     const balance = loadBalance();
-    balanceDisplay.textContent = balance.toFixed(5);
+    balanceDisplay.textContent = balance.toFixed(2); // Баланс отображается с 2 знаками
     updateAllUpgradesUI();
 }
 
@@ -131,11 +140,11 @@ function calculatePassiveIncome() {
 
     const earnedIncome = incomePerHour * timeElapsedHours;
 
-    if (earnedIncome > 0.00001) {
+    if (earnedIncome > 0.01) { // Начисляем, только если набралось больше 0.01 TON
         let currentBalance = loadBalance();
         currentBalance += earnedIncome;
         saveBalance(currentBalance);
-        console.log(`[Пассив] Заработано: ${earnedIncome.toFixed(5)} TON за ${timeElapsedHours.toFixed(2)} часов.`);
+        console.log(`[Пассив] Заработано: ${earnedIncome.toFixed(2)} TON за ${timeElapsedHours.toFixed(2)} часов.`);
     }
 
     lastLoginTime = currentTime;
@@ -152,7 +161,7 @@ function handleTap() {
     updateDisplay();
 
     // Визуальный отклик
-    tapButton.textContent = `+${TAP_AMOUNT.toFixed(5)}`;
+    tapButton.textContent = `+${TAP_AMOUNT.toFixed(TAP_AMOUNT % 1 === 0 ? 0 : 2)}`;
     setTimeout(() => {
         tapButton.textContent = 'ТАПАТЬ';
     }, 200);
@@ -174,7 +183,6 @@ function handleBuyUpgrade(event) {
         currentBalance -= cost;
         activeUpgrades[upgradeId]++;
         
-        // Важно: пересчитываем пассивный доход, чтобы применить новый уровень немедленно
         calculatePassiveIncome(); 
 
         saveBalance(currentBalance);
@@ -213,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const targetId = item.getAttribute('data-target');
-            if (targetId) { // Проверяем, что data-target существует
+            if (targetId) { 
                  switchSection(targetId);
             }
         });
