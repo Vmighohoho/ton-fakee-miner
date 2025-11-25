@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Имитация TON Wallet</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+    <div class="wallet-container">
+        
+        <header class="header">
+            <div class="ton-symbol">T</div>
+            <div class="balance-info">
+                <span class="currency-name">TON Fake Coin</span>
+                <div id="balance-display" class="balance-amount">0.00000</div>
+            </div>
+            <button class="settings-btn"><i class="fas fa-ellipsis-v"></i></button>
+        </header>
+
+        <div class="content-wrapper">
+            
+            <main id="wallet-section" class="main-content active">
+                <h2 class="tap-title">Получить TON Fake Coin</h2>
+                <button id="tap-button" class="tap-btn">
+                    ТАПАТЬ
+                </button>
+                <p class="tap-info">Нажмите, чтобы получить <span id="tap-value">0.00005</span> Fake TON</p>
+            </main>
+
+            <section id="passive-section" class="passive-content hidden">
+                <h2 class="passive-title">Центр Дохода</h2>
+                
+                <div id="passive-income-display" class="current-passive-rate">
+                    Пассивный доход: <span id="income-rate">0.00</span> TON/час
+                </div>
+
+                <div class="upgrade-card" data-upgrade-id="tap_boost">
+                    <div class="upgrade-info">
+                        <i class="fas fa-hand-pointer"></i>
+                        <div class="text-info">
+                            <h3>Усиление Тапа (LVL <span class="level">0</span>)</h3>
+                            <p>Доход за тап: +<span class="value">0.00005</span></p>
+                        </div>
+                    </div>
+                    <button class="buy-btn" data-cost-key="tap_boost">Купить (1.00 TON)</button>
+                </div>
+
+                <div class="upgrade-card" data-upgrade-id="passive_income">
+                    <div class="upgrade-info">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <div class="text-info">
+                            <h3>Пассивный Доход (LVL <span class="level">0</span>)</h3>
+                            <p>Доход в час: +<span class="value">0.00</span></p>
+                        </div>
+                    </div>
+                    <button class="buy-btn" data-cost-key="passive_income">Купить (5.00 TON)</button>
+                </div>
+                
+                <p class="passive-hint">Ваш пассивный доход начисляется даже когда вы не в сети!</p>
+            </section>
+            
+            <section id="exchange-section" class="passive-content hidden">
+                <h2 class="passive-title">Обмен (В разработке)</h2>
+                <p style="text-align: center; color: #555;">Здесь будет функционал обмена валют.</p>
+            </section>
+
+        </div>
+        
+        <nav class="footer-nav">
+            <div class="nav-item active" data-target="wallet-section">
+                <i class="fas fa-wallet"></i>
+                <span>Кошелёк</span>
+            </div>
+            <div class="nav-item" data-target="exchange-section">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Обмен</span>
+            </div>
+            <div class="nav-item" data-target="passive-section">
+                <i class="fas fa-chart-line"></i>
+                <span>Доход</span>
+            </div>
+        </nav>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
