@@ -3,6 +3,7 @@ const BALANCE_KEY = 'fakeTonBalance';
 const UPGRADES_KEY = 'upgradeLevels';
 const REBIRTH_KEY = 'rebirthLevel'; 
 const STARS_KEY = 'starsCount'; 
+const LAST_LOGIN_KEY = 'lastLoginTime'; // Добавил константу для удобства
 
 let TAP_AMOUNT = 1.0; 
 
@@ -12,7 +13,6 @@ const NORMAL_REBIRTH_COST = 10000.0;
 const STAR_REBIRTH_COST_STARS = 1;
 const REBIRTH_COST_MULTIPLIER = 1.5; 
 
-// const REBIRTH_EARNINGS_MULTIPLIER = 2.0; // ЭТА КОНСТАНТА БОЛЬШЕ НЕ НУЖНА ДЛЯ РАСЧЕТА МНОЖИТЕЛЯ
 const STAR_REBIRTH_BOOST = 5; // Звездный ребирт дает +5 уровней множителя
 
 let rebirthLevel = loadRebirthLevel(); 
@@ -52,12 +52,14 @@ const starRebirthButton = document.getElementById('rebirth-option-2');
 
 const starCountDisplay = document.getElementById('star-count');
 const buyStarButton = document.getElementById('buy-star-btn');
+const fullResetButton = document.getElementById('full-reset-btn'); // НОВАЯ КНОПКА
 
 const navItems = document.querySelectorAll('.footer-nav .nav-item');
 const sections = {
     'wallet-section': document.getElementById('wallet-section'),
     'passive-section': document.getElementById('passive-section'),
-    'exchange-section': document.getElementById('exchange-section')
+    'exchange-section': document.getElementById('exchange-section'),
+    'reset-section': document.getElementById('reset-section') // НОВАЯ СЕКЦИЯ
 };
 
 let lastLoginTime = Date.now();
@@ -102,7 +104,7 @@ function saveStarsCount(stars) {
     localStorage.setItem(STARS_KEY, stars.toString());
 }
 
-// --- ФУНКЦИИ МНОЖИТЕЛЯ (ИЗМЕНЕНО) ---
+// --- ФУНКЦИИ МНОЖИТЕЛЯ ---
 function getRebirthMultiplier() {
     // Множитель = Уровень + 1 (т.е. Уровень 0 = 1x, Уровень 1 = 2x, Уровень 5 = 6x)
     return rebirthLevel + 1;
@@ -197,7 +199,7 @@ function calculatePassiveIncome() {
     
     if (incomePerHour === 0) {
         lastLoginTime = currentTime;
-        localStorage.setItem('lastLoginTime', currentTime.toString());
+        localStorage.setItem(LAST_LOGIN_KEY, currentTime.toString());
         return;
     }
 
@@ -214,7 +216,7 @@ function calculatePassiveIncome() {
     }
 
     lastLoginTime = currentTime;
-    localStorage.setItem('lastLoginTime', currentTime.toString());
+    localStorage.setItem(LAST_LOGIN_KEY, currentTime.toString());
 }
 
 
@@ -282,7 +284,7 @@ function handleRebirth(event) {
         saveBalance(0.00); 
 
         // 4. СБРОС НАКОПЛЕННОГО ПАССИВНОГО ДОХОДА
-        localStorage.setItem('lastLoginTime', Date.now().toString());
+        localStorage.setItem(LAST_LOGIN_KEY, Date.now().toString());
         
         const newMultiplier = getRebirthMultiplier();
         console.log(`[РЕБИРТ] Проведен Ребирт. Новый множитель: ${newMultiplier}x`);
@@ -292,6 +294,22 @@ function handleRebirth(event) {
 
     } else {
         alert(`Недостаточно ресурсов для Ребирта. Требуется: ${costText}.`);
+    }
+}
+
+// --- НОВАЯ ФУНКЦИЯ: ПОЛНЫЙ СБРОС СТАТИСТИКИ ---
+function handleFullReset() {
+    if (confirm("ВНИМАНИЕ! Вы уверены, что хотите полностью сбросить весь прогресс (баланс, прокачки, Ребирт, Звезды)? Это действие необратимо.")) {
+        
+        // Удаляем все ключи из localStorage
+        localStorage.removeItem(BALANCE_KEY);
+        localStorage.removeItem(UPGRADES_KEY);
+        localStorage.removeItem(REBIRTH_KEY);
+        localStorage.removeItem(STARS_KEY);
+        localStorage.removeItem(LAST_LOGIN_KEY);
+        
+        alert("Весь прогресс успешно сброшен. Игра начнется заново.");
+        window.location.reload(); // Перезагружаем страницу для применения изменений
     }
 }
 
@@ -388,9 +406,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Кнопка ОБМЕНА
     buyStarButton.addEventListener('click', handleBuyStar);
+    
+    // КНОПКА ПОЛНОГО СБРОСА СТАТИСТИКИ
+    fullResetButton.addEventListener('click', handleFullReset);
 
     // Загрузка данных и расчет
-    const savedTime = localStorage.getItem('lastLoginTime');
+    const savedTime = localStorage.getItem(LAST_LOGIN_KEY);
     if (savedTime) {
         lastLoginTime = parseInt(savedTime);
     }
