@@ -15,7 +15,7 @@
             <div class="ton-symbol">T</div>
             <div class="balance-info">
                 <span class="currency-name">TON Fake Coin</span>
-                <div id="balance-display" class="balance-amount">0.00000</div>
+                <div id="balance-display" class="balance-amount">0.00</div>
             </div>
             <button class="settings-btn"><i class="fas fa-ellipsis-v"></i></button>
         </header>
@@ -42,7 +42,7 @@
                         <i class="fas fa-hand-pointer"></i>
                         <div class="text-info">
                             <h3>Усиление Тапа (LVL <span class="level">0</span>)</h3>
-                            <p>Доход за тап: +<span class="value">0.00005</span></p>
+                            <p>Доход за тап: +<span class="value">1.0</span></p>
                         </div>
                     </div>
                     <button class="buy-btn" data-cost-key="tap_boost">Купить (10.00 TON)</button>
@@ -52,11 +52,23 @@
                     <div class="upgrade-info">
                         <i class="fas fa-money-bill-wave"></i>
                         <div class="text-info">
-                             <h3>Пассивный Доход (LVL <span class="level">0</span>)</h3>
+                            <h3>Пассивный Доход (LVL <span class="level">0</span>)</h3>
                             <p>Доход в час: +<span class="value">0.00</span></p>
                         </div>
                     </div>
                     <button class="buy-btn" data-cost-key="passive_income">Купить (50.00 TON)</button>
+                </div>
+                
+                <div class="upgrade-card rebirth-card" data-upgrade-id="rebirth">
+                    <div class="upgrade-info">
+                        <i class="fas fa-redo"></i>
+                        <div class="text-info">
+                            <h3>Ребирт (LVL <span id="rebirth-level" class="level">0</span>)</h3>
+                            <p>Общий множитель дохода: <span id="rebirth-multiplier">1x</span></p>
+                        </div>
+                    </div>
+                    <button id="rebirth-btn" class="buy-btn">Провести Ребирт (20,000 TON)</button>
+                    <p class="rebirth-warning">Сбросит уровень прокачек и баланс (кроме текущего множителя).</p>
                 </div>
                 
                 <p class="passive-hint">Ваш пассивный доход начисляется даже когда вы не в сети!</p>
